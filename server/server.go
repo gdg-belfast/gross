@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/gorilla/feeds"
-	"github.com/tyndyll/gross/mediafile"
+	"github.com/gobelfast/gross/mediafile"
 	"log"
 	"mime"
 	"net/http"

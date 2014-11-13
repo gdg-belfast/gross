@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/tyndyll/gross/mediafile"
-	"github.com/tyndyll/gross/server"
+	"github.com/gobelfast/gross/mediafile"
+	"github.com/gobelfast/gross/server"
 	"io/ioutil"
 	"log"
 	"os"
