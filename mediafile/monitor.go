@@ -3,7 +3,6 @@ package mediafile
 import (
 	"crypto/md5"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,9 +12,8 @@ import (
 
 // HashString takes a string and returns the MD5 of that string
 func HashString(s string) string {
-	h := md5.New()
-	io.WriteString(h, s)
-	return fmt.Sprintf("%x", h.Sum(nil))
+	checksum := md5.Sum([]byte(s))
+	return fmt.Sprintf("%x", checksum)
 }
 
 // MonitorDirectory takes a local directory and a iterates through it
