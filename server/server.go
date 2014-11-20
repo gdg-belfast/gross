@@ -85,7 +85,6 @@ func (s *RssServer) GetFile(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, file.Filepath)
 	} else {
 		InvalidUrl(w)
-		return
 	}
 }
 
