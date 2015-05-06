@@ -1,8 +1,8 @@
-package server
+package infrastructure
 
 import (
 	"fmt"
-	"github.com/gobelfast/gross/mediafile"
+	"github.com/gdg-belfast/gross/domain"
 	"github.com/gorilla/feeds"
 	"log"
 	"mime"
@@ -26,25 +26,33 @@ type RssServer struct {
 	// Feed Object
 	Feed *feeds.RssFeed
 	// Internal map of files that we are making available
-	Filemap map[string]*mediafile.File
+	Filemap map[string]*domain.MediaFile
 }
 
-// NewServer takes the URL and port that the server will listen and
+// NewRssServer takes the URL and port that the server will listen and
 // offer its wares from.
-// It returns a pointer to a RssServer
-func NewServer(serverName string, port int) *RssServer {
+func NewRssServer(serverName string, port int) *RssServer {
 	s := &RssServer{
 		Server:  serverName,
 		Port:    port,
 		Feed:    &feeds.RssFeed{},
-		Filemap: make(map[string]*mediafile.File),
+		Filemap: make(map[string]*domain.MediaFile),
 	}
 	return s
 }
 
+// Run starts the HTTP listener.
+// Returns whatever error the HTTP server may raise (not HTTP errors)
+func (s *RssServer) Run() error {
+	http.HandleFunc("/file/", s.GetFile)
+	http.HandleFunc("/", s.GetList)
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", s.Port), nil)
+}
+
 // SetFileInput sets the input channel that will feed the RSS feed
 // Starts a new go routine
-func (s *RssServer) SetFileInput(additions chan *mediafile.File) {
+func (s *RssServer) SetFileInput(additions chan *domain.MediaFile) {
 	go func() {
 		for {
 			newFile := <-additions
@@ -54,15 +62,6 @@ func (s *RssServer) SetFileInput(additions chan *mediafile.File) {
 			s.Feed.PubDate = time.Now().String()
 		}
 	}()
-}
-
-// Run starts the HTTP listener.
-// Returns whatever error the HTTP server may raise
-func (s *RssServer) Run() error {
-	http.HandleFunc("/file/", s.GetFile)
-	http.HandleFunc("/", s.GetList)
-
-	return http.ListenAndServe(fmt.Sprintf(":%d", s.Port), nil)
 }
 
 // GetList is the endpoint that will return the XML file
@@ -76,7 +75,7 @@ func (s *RssServer) GetFile(w http.ResponseWriter, r *http.Request) {
 	keyParts := strings.Split(r.URL.Path, "/")
 	// ["", files, "file hash", "file name"]
 	if len(keyParts) != 4 {
-		InvalidUrl(w)
+		invalidUrl(w)
 		return
 	}
 	if file, ok := s.Filemap[keyParts[2]]; ok {
@@ -84,17 +83,17 @@ func (s *RssServer) GetFile(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.Name()))
 		http.ServeFile(w, r, file.Filepath)
 	} else {
-		InvalidUrl(w)
+		invalidUrl(w)
 	}
 }
 
-// InvalidUrl writes a 404 response and error message to the provided HTTP ResponseWriter
-func InvalidUrl(w http.ResponseWriter) {
+// invalidUrl writes a 404 response and error message to the provided HTTP ResponseWriter
+func invalidUrl(w http.ResponseWriter) {
 	http.Error(w, "Invalid URL", http.StatusBadRequest)
 }
 
 // CreateRssItem takes a provided file.MediaFile and converts it into a RssItem
-func (s *RssServer) CreateRssItem(file *mediafile.File) *feeds.RssItem {
+func (s *RssServer) CreateRssItem(file *domain.MediaFile) *feeds.RssItem {
 	item := &feeds.RssItem{}
 	item.Title = file.Name()
 	item.Link = s.MakeLinkUrl(file.Hash, file.Name())

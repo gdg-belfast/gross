@@ -1,38 +1,29 @@
 package main
 
 import (
-	"github.com/codegangsta/cli"
-	"github.com/gobelfast/gross/mediafile"
-	"github.com/gobelfast/gross/server"
+	"github.com/gdg-belfast/gross/domain"
+	"github.com/gdg-belfast/gross/implementation"
+	"github.com/gdg-belfast/gross/infrastructure"
 	"io/ioutil"
 	"log"
 	"os"
 )
 
-func RunServer(c *cli.Context) {
-	if len(c.Args()) == 0 {
+func main() {
+	if len(os.Args) <= 1 {
 		log.Fatalln("No directories provided")
 	}
 
-	additions := make(chan *mediafile.File)
+	additions := make(chan *domain.MediaFile)
 	defer close(additions)
 
-	for _, directory := range c.Args() {
+	for _, directory := range os.Args[1:] {
 		if _, err := ioutil.ReadDir(directory); err != nil {
 			log.Fatalln(err)
 		}
-		go mediafile.MonitorDirectory(directory, additions)
+		go implementation.MonitorDirectory(directory, additions)
 	}
-	server := server.NewServer("http://localhost", 64055)
+	server := infrastructure.NewRssServer("http://localhost", 64055)
 	server.SetFileInput(additions)
 	log.Fatalln(server.Run())
-}
-
-func main() {
-	log.Println("Running GRoSS")
-	app := cli.NewApp()
-	app.Name = "gross"
-	app.Usage = "run an RSS server"
-	app.Action = RunServer
-	app.Run(os.Args)
 }
