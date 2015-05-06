@@ -1,8 +1,9 @@
-package mediafile
+package implementation
 
 import (
 	"crypto/md5"
 	"fmt"
+	"github.com/gdg-belfast/gross/domain"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,22 +21,28 @@ func HashString(s string) string {
 // placing newly found files into a channel
 //
 // It is not meant to be returned from
-func MonitorDirectory(directory string, additions chan (*File)) {
+func MonitorDirectory(directory string, additions chan (*domain.MediaFile)) {
 	if err := os.Chdir(directory); err != nil {
 		log.Fatalln(err)
 	}
-	fileList := make(map[string]*File)
+	fileList := make(map[string]*domain.MediaFile)
 	for {
 		files, err := ioutil.ReadDir(directory)
 		if err != nil {
 			log.Fatalln("Error reading")
 		}
 		for _, file := range files {
-			sha := HashString(file.Name())
-			if _, ok := fileList[sha]; ok {
+			if file.IsDir() {
+				// The returned file is a directory. For demo purposes
+				// we won't recurse
 				continue
 			}
-			fileList[sha] = &File{
+			sha := HashString(file.Name())
+			if _, ok := fileList[sha]; ok {
+				// File exists in the hash. Continue
+				continue
+			}
+			fileList[sha] = &domain.MediaFile{
 				file,
 				filepath.Join(directory, file.Name()),
 				sha,
