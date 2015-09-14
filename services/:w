@@ -1,0 +1,46 @@
+package services
+
+import (
+	. "github.com/smartystreets/goconvey/convey"
+	"testing"
+
+	"fmt"
+	"net/http"
+)
+
+func TestRss(t *testing.T) {
+
+	Convey(`Given I have an RSS server instance`, t, func() {
+
+		mux := mux.NewServeMux()
+
+		rssFeed := "<?xml version="1.0"?><feed></feed>"
+
+		mockRss := &mockRssController{
+			MockFeed: func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, rssFeed)
+			},
+		}
+
+		server := &Rss{
+			Router: mux,
+			Server: mockRss,
+		}
+		server.SetupMux()
+
+		Convey(`When I go to the RSS_FEED url`, func() {
+
+			Convey(`Then I will get a RSS feed`, func() {
+
+			})
+		})
+	})
+}
+
+type mockRssController struct {
+	MockFeed func(http.ResponseWriter, *http.Request)
+}
+
+func (stub *mockRssController) Feed(w http.ResponseWriter, r *http.Request) {
+	stub.MockFeed(w, r)
+}
